@@ -53,17 +53,17 @@ export default function OsitosLandingPage() {
 
   const selectedDeal = packs.find((pack) => pack.count === selectedPack) ?? packs[0];
   const whatsappText = encodeURIComponent(
-    `Hola, quiero pedir ${selectedDeal.label} OSITOS personalizado. Precio S/ ${selectedDeal.price}.`,
+    `Hola, quiero pedir ${selectedDeal.label} WAWAS R US personalizado. Precio S/ ${selectedDeal.price}.`,
   );
   const whatsappUrl = `https://wa.me/${product.whatsapp}?text=${whatsappText}`;
 
   return (
     <>
       <Helmet>
-        <title>OSITOS Landing | Vista de prueba</title>
+        <title>WAWAS R US Landing | Vista de prueba</title>
         <meta
           name="description"
-          content="Vista responsive de prueba para poleras OSITOS personalizadas."
+          content="Vista responsive de prueba para poleras WAWAS R US personalizadas."
         />
       </Helmet>
 
@@ -78,7 +78,7 @@ export default function OsitosLandingPage() {
 
         <header className="ositos-v2__nav">
           <a href="#top" className="ositos-v2__brand" aria-label="Ir al inicio">
-            OSITOS
+            WAWAS R US
           </a>
           <nav aria-label="Secciones">
             <a href="#tallas">Tallas</a>

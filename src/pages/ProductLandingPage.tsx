@@ -28,12 +28,12 @@ export default function ProductLandingPage() {
           name="description"
           content={
             product.description ||
-            `${product.name} - Poleras personalizadas OSITOS. Desde S/.${product.price}. ¡Pide la tuya ahora!`
+            `${product.name} - Poleras personalizadas WAWAS R US. Desde S/.${product.price}. ¡Pide la tuya ahora!`
           }
         />
         <meta
           name="keywords"
-          content={`${product.name}, poleras personalizadas, OSITOS, regalo, familia`}
+          content={`${product.name}, poleras personalizadas, WAWAS R US, regalo, familia`}
         />
         <meta
           property="og:title"

@@ -5,7 +5,7 @@ export function buildWhatsAppUrl(
   productName: string,
   order: OrderFormData
 ): string {
-  const message = `🧸 *NUEVO PEDIDO - OSITOS*\n\n` +
+  const message = `🧸 *NUEVO PEDIDO - WAWAS R US*\n\n` +
     `📦 *Producto:* ${productName}\n` +
     `🎨 *Color:* ${order.color}\n` +
     `📏 *Talla:* ${order.talla}\n` +
