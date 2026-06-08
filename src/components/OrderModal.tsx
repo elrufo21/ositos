@@ -1,20 +1,119 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import type { Product, OrderFormData } from '../types/product';
-import { buildWhatsAppUrl } from '../lib/whatsapp';
+import { useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import type { Product, OrderFormData } from "../types/product";
+import { buildWhatsAppUrl } from "../lib/whatsapp";
+
+const ENVIO_PERU = 10;
+const UNIT_PRICE = 89;
+
+const offers = [
+  {
+    id: 1,
+    title: "1 POLERÓN",
+    quantity: 1,
+    unitPrice: UNIT_PRICE,
+    finalPrice: 89,
+    badge: "",
+    subtitle: "Ideal para ti",
+  },
+  {
+    id: 2,
+    title: "2 POLERONES",
+    quantity: 2,
+    unitPrice: UNIT_PRICE,
+    finalPrice: 165,
+    badge: "MÁS PEDIDO",
+    subtitle: "Mejor para compartir",
+  },
+  {
+    id: 3,
+    title: "3 POLERONES",
+    quantity: 3,
+    unitPrice: UNIT_PRICE,
+    finalPrice: 239,
+    badge: "PARA MAMÁ TAMBIÉN",
+    subtitle: "La mejor opción",
+  },
+];
+
+const colors = ["Verde", "Gris", "Pastel"];
+
+const sizeTables = {
+  Baby: [
+    { talla: "0-3M", a: 30, b: 31 },
+    { talla: "3-6M", a: 32, b: 33 },
+    { talla: "6-12M", a: 35, b: 37 },
+    { talla: "12-18M", a: 37, b: 39 },
+    { talla: "18-24M", a: 39, b: 43 },
+  ],
+  Kids: [
+    { talla: "T4", a: 39, b: 48 },
+    { talla: "T6", a: 40, b: 50 },
+    { talla: "T8", a: 41, b: 51 },
+    { talla: "T10", a: 43, b: 52 },
+    { talla: "T12", a: 46, b: 54 },
+    { talla: "T14", a: 49, b: 58 },
+    { talla: "T16", a: 53, b: 60 },
+  ],
+  Mujer: [
+    { talla: "S", a: 52, b: 64 },
+    { talla: "M", a: 55, b: 68 },
+    { talla: "L", a: 59, b: 72 },
+    { talla: "XL", a: 62, b: 74 },
+  ],
+  Hombre: [
+    { talla: "S", a: 59, b: 71 },
+    { talla: "M", a: 61, b: 73 },
+    { talla: "L", a: 63, b: 76 },
+    { talla: "XL", a: 66, b: 79 },
+  ],
+};
+
+const peruLocations = [
+  {
+    departamento: "Lima",
+    provincias: ["Lima", "Cañete", "Huaral", "Huaura", "Barranca"],
+  },
+  {
+    departamento: "Junín",
+    provincias: ["Huancayo", "Chupaca", "Concepción", "Jauja", "Tarma"],
+  },
+  {
+    departamento: "Arequipa",
+    provincias: ["Arequipa", "Camaná", "Islay", "Caylloma"],
+  },
+  {
+    departamento: "Cusco",
+    provincias: ["Cusco", "Urubamba", "Calca", "La Convención"],
+  },
+  {
+    departamento: "La Libertad",
+    provincias: ["Trujillo", "Ascope", "Chepén", "Pacasmayo"],
+  },
+  {
+    departamento: "Piura",
+    provincias: ["Piura", "Sullana", "Talara", "Paita"],
+  },
+];
+
+type SizeType = keyof typeof sizeTables;
+
+interface OrderItem {
+  tipo: SizeType;
+  color: string;
+  talla: string;
+}
 
 const orderSchema = z.object({
-  nombre: z.string().min(3, 'Ingresa tu nombre completo'),
-  celular: z.string().min(9, 'Ingresa un celular válido').max(15),
-  departamento: z.string().min(2, 'Selecciona tu departamento'),
-  provincia: z.string().min(2, 'Ingresa tu provincia'),
-  distrito: z.string().min(2, 'Ingresa tu distrito'),
-  direccion: z.string().min(5, 'Ingresa tu dirección completa'),
-  referencia: z.string().min(3, 'Ingresa una referencia'),
-  color: z.string().min(1, 'Selecciona un color'),
-  talla: z.string().min(1, 'Selecciona una talla'),
-  cantidad: z.coerce.number().min(1, 'Mínimo 1 unidad').max(99),
+  nombre: z.string().min(3, "Ingresa tu nombre completo"),
+  celular: z.string().min(9, "Ingresa un celular válido").max(15),
+  departamento: z.string().min(2, "Selecciona tu departamento"),
+  provincia: z.string().min(2, "Selecciona tu provincia"),
+  distrito: z.string().min(2, "Ingresa tu distrito"),
+  direccion: z.string().min(5, "Ingresa tu dirección completa"),
+  referencia: z.string().min(3, "Ingresa una referencia"),
 });
 
 type OrderFormInput = z.input<typeof orderSchema>;
@@ -25,142 +124,378 @@ interface OrderModalProps {
   onClose: () => void;
 }
 
-export default function OrderModal({ product, isOpen, onClose }: OrderModalProps) {
+export default function OrderModal({
+  product,
+  isOpen,
+  onClose,
+}: OrderModalProps) {
+  const [selectedOffer, setSelectedOffer] = useState(offers[1]);
+
+  const [items, setItems] = useState<OrderItem[]>(
+    Array.from({ length: offers[1].quantity }, () => ({
+      tipo: "Mujer",
+      color: colors[0],
+      talla: sizeTables.Mujer[0].talla,
+    })),
+  );
+
   const {
     register,
     handleSubmit,
+    control,
+    setValue,
     formState: { errors },
-  } = useForm<OrderFormInput, unknown, OrderFormData>({
+  } = useForm<OrderFormInput>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
-      cantidad: 1,
-      color: product.colors[0] || '',
-      talla: '',
+      nombre: "",
+      celular: "",
+      departamento: "",
+      provincia: "",
+      distrito: "",
+      direccion: "",
+      referencia: "",
     },
   });
 
-  const onSubmit = (data: OrderFormData) => {
-    const url = buildWhatsAppUrl(product.whatsapp, product.name, data);
-    window.open(url, '_blank');
+  const selectedDepartamento = useWatch({
+    control,
+    name: "departamento",
+  });
+
+  const provincias =
+    peruLocations.find((item) => item.departamento === selectedDepartamento)
+      ?.provincias || [];
+
+  const subtotal = selectedOffer.unitPrice * selectedOffer.quantity;
+  const descuento = subtotal - selectedOffer.finalPrice;
+  const total = selectedOffer.finalPrice + ENVIO_PERU;
+
+  const inputClass = (hasError?: boolean) =>
+    `w-full h-11 rounded-md border px-3 text-sm outline-none bg-white ${
+      hasError
+        ? "border-red-400 focus:ring-2 focus:ring-red-200"
+        : "border-gray-300 focus:border-pink-500 focus:ring-2 focus:ring-pink-200"
+    }`;
+
+  const selectOffer = (offer: (typeof offers)[number]) => {
+    setSelectedOffer(offer);
+
+    setItems(
+      Array.from({ length: offer.quantity }, (_, index) => ({
+        tipo: items[index]?.tipo || "Mujer",
+        color: items[index]?.color || colors[0],
+        talla: items[index]?.talla || sizeTables.Mujer[0].talla,
+      })),
+    );
+  };
+
+  const updateItem = (index: number, field: keyof OrderItem, value: string) => {
+    setItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== index) return item;
+
+        if (field === "tipo") {
+          const newTipo = value as SizeType;
+
+          return {
+            ...item,
+            tipo: newTipo,
+            talla: sizeTables[newTipo][0].talla,
+          };
+        }
+
+        return {
+          ...item,
+          [field]: value,
+        };
+      }),
+    );
+  };
+
+  const getSizeInfo = (tipo: SizeType, talla: string) => {
+    return sizeTables[tipo].find((item) => item.talla === talla);
+  };
+
+  const onSubmit = (data: OrderFormInput) => {
+    const detalleProductos = items
+      .map((item, index) => {
+        const sizeInfo = getSizeInfo(item.tipo, item.talla);
+
+        return `#${index + 1}: ${item.tipo} / Color: ${item.color} / Talla: ${
+          item.talla
+        } / A:${sizeInfo?.a ?? "-"} B:${sizeInfo?.b ?? "-"}`;
+      })
+      .join(" | ");
+
+    const messageData = {
+      ...data,
+      cantidad: selectedOffer.quantity,
+      color: items.map((item, i) => `#${i + 1}: ${item.color}`).join(", "),
+      talla: detalleProductos,
+    } as OrderFormData;
+
+    const url = buildWhatsAppUrl(product.whatsapp, product.name, messageData);
+    window.open(url, "_blank");
     onClose();
   };
 
   if (!isOpen) return null;
 
-  const inputClass = (hasError: boolean) =>
-    `w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 text-sm bg-white focus:outline-none ${
-      hasError
-        ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-        : 'border-gray-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-200'
-    }`;
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-3">
+      <div className="relative max-h-[95vh] w-full max-w-[560px] overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-3 text-2xl font-light"
+        >
+          ×
+        </button>
 
-      {/* Modal */}
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl">
-        {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-rose-800 to-rose-900 text-white p-6 rounded-t-3xl">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors text-white text-lg cursor-pointer"
-          >
-            ✕
-          </button>
-          <h2 className="text-xl font-extrabold">📦 Realizar Pedido</h2>
-          <p className="text-rose-200 text-sm mt-1">{product.name}</p>
-        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-6">
+          <div className="space-y-3">
+            {offers.map((offer) => {
+              const active = selectedOffer.id === offer.id;
+              const offerSubtotal = offer.unitPrice * offer.quantity;
 
-        {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
-          {/* Nombre */}
-          <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Nombre completo</label>
-            <input {...register('nombre')} placeholder="Ej: María García" className={inputClass(!!errors.nombre)} />
-            {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
+              return (
+                <div
+                  key={offer.id}
+                  onClick={() => selectOffer(offer)}
+                  className={`relative cursor-pointer rounded-3xl border p-4 transition-all ${
+                    active
+                      ? "border-fuchsia-500 bg-fuchsia-50 ring-1 ring-fuchsia-500"
+                      : "border-gray-300 bg-white"
+                  }`}
+                >
+                  {offer.badge && (
+                    <div className="absolute -top-3 right-6 rounded-sm bg-pink-600 px-4 py-1 text-xs font-black text-white">
+                      {offer.badge}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`flex h-5 w-5 items-center justify-center rounded-full border ${
+                          active ? "border-fuchsia-600" : "border-gray-300"
+                        }`}
+                      >
+                        {active && (
+                          <span className="h-3 w-3 rounded-full bg-fuchsia-600" />
+                        )}
+                      </span>
+
+                      <div>
+                        <p className="text-sm font-black sm:text-base">
+                          {offer.title}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {offer.subtitle}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-xl font-black">
+                        S/. {offer.finalPrice.toFixed(2)}
+                      </p>
+
+                      {offerSubtotal !== offer.finalPrice && (
+                        <p className="text-sm line-through">
+                          S/. {offerSubtotal.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {active && (
+                    <div className="mt-4 space-y-2">
+                      <div className="grid grid-cols-[35px_1fr_1fr_1fr] gap-2 text-xs font-bold sm:text-sm">
+                        <span></span>
+                        <span>Tipo</span>
+                        <span>Color</span>
+                        <span>Talla</span>
+                      </div>
+
+                      {items.map((item, index) => (
+                        <div
+                          key={index}
+                          className="grid grid-cols-[35px_1fr_1fr_1fr] items-center gap-2"
+                        >
+                          <span className="font-black">#{index + 1}</span>
+
+                          <select
+                            value={item.tipo}
+                            onChange={(e) =>
+                              updateItem(index, "tipo", e.target.value)
+                            }
+                            className={inputClass()}
+                          >
+                            {Object.keys(sizeTables).map((tipo) => (
+                              <option key={tipo} value={tipo}>
+                                {tipo}
+                              </option>
+                            ))}
+                          </select>
+
+                          <select
+                            value={item.color}
+                            onChange={(e) =>
+                              updateItem(index, "color", e.target.value)
+                            }
+                            className={inputClass()}
+                          >
+                            {colors.map((color) => (
+                              <option key={color} value={color}>
+                                {color}
+                              </option>
+                            ))}
+                          </select>
+
+                          <select
+                            value={item.talla}
+                            onChange={(e) =>
+                              updateItem(index, "talla", e.target.value)
+                            }
+                            className={inputClass()}
+                          >
+                            {sizeTables[item.tipo].map((size) => (
+                              <option key={size.talla} value={size.talla}>
+                                {size.talla} - A:{size.a} B:{size.b}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
-          {/* Celular */}
-          <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Celular</label>
-            <input {...register('celular')} placeholder="Ej: 999999999" className={inputClass(!!errors.celular)} />
-            {errors.celular && <p className="text-red-500 text-xs mt-1">{errors.celular.message}</p>}
-          </div>
+          <div className="rounded-md border border-gray-300 p-3 text-sm sm:text-base">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <strong>S/. {subtotal.toFixed(2)}</strong>
+            </div>
 
-          {/* Departamento / Provincia / Distrito */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Departamento</label>
-              <input {...register('departamento')} placeholder="Lima" className={inputClass(!!errors.departamento)} />
-              {errors.departamento && <p className="text-red-500 text-xs mt-1">{errors.departamento.message}</p>}
+            <div className="mt-2 flex justify-between">
+              <span>🏷 Descuento</span>
+              <strong className="text-red-500">
+                -S/. {descuento.toFixed(2)}
+              </strong>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Provincia</label>
-              <input {...register('provincia')} placeholder="Lima" className={inputClass(!!errors.provincia)} />
-              {errors.provincia && <p className="text-red-500 text-xs mt-1">{errors.provincia.message}</p>}
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Distrito</label>
-              <input {...register('distrito')} placeholder="Miraflores" className={inputClass(!!errors.distrito)} />
-              {errors.distrito && <p className="text-red-500 text-xs mt-1">{errors.distrito.message}</p>}
-            </div>
-          </div>
 
-          {/* Dirección */}
-          <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Dirección exacta</label>
-            <input {...register('direccion')} placeholder="Av. Example 123, Dpto 4B" className={inputClass(!!errors.direccion)} />
-            {errors.direccion && <p className="text-red-500 text-xs mt-1">{errors.direccion.message}</p>}
-          </div>
-
-          {/* Referencia */}
-          <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Referencia</label>
-            <input {...register('referencia')} placeholder="Frente al parque..." className={inputClass(!!errors.referencia)} />
-            {errors.referencia && <p className="text-red-500 text-xs mt-1">{errors.referencia.message}</p>}
-          </div>
-
-          {/* Color / Talla / Cantidad */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Color</label>
-              <select {...register('color')} className={inputClass(!!errors.color)}>
-                <option value="">Seleccionar</option>
-                {product.colors.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              {errors.color && <p className="text-red-500 text-xs mt-1">{errors.color.message}</p>}
+            <div className="mt-2 flex justify-between">
+              <span>🎁 Empaque de regalo</span>
+              <strong>GRATIS</strong>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Talla</label>
-              <select {...register('talla')} className={inputClass(!!errors.talla)}>
-                <option value="">Seleccionar</option>
-                {product.sizes.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              {errors.talla && <p className="text-red-500 text-xs mt-1">{errors.talla.message}</p>}
+
+            <div className="mt-2 flex justify-between">
+              <span>🚚 Envío a todo el Perú</span>
+              <strong>S/. {ENVIO_PERU.toFixed(2)}</strong>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Cantidad</label>
-              <input type="number" min="1" max="99" {...register('cantidad')} className={inputClass(!!errors.cantidad)} />
-              {errors.cantidad && <p className="text-red-500 text-xs mt-1">{errors.cantidad.message}</p>}
+
+            <div className="my-3 border-t" />
+
+            <div className="flex justify-between text-lg font-black">
+              <span>Total</span>
+              <span>S/. {total.toFixed(2)}</span>
             </div>
           </div>
 
-          {/* Submit */}
+          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
+            <label className="text-sm font-black">Nombre y Apellidos *</label>
+            <input
+              {...register("nombre")}
+              placeholder="Nombre Completo"
+              className={inputClass(!!errors.nombre)}
+            />
+          </div>
+
+          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
+            <label className="text-sm font-black">Celular o Teléfono *</label>
+            <input
+              {...register("celular")}
+              placeholder="Ej: 933832272"
+              className={inputClass(!!errors.celular)}
+            />
+          </div>
+
+          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
+            <label className="text-sm font-black">Departamento *</label>
+            <select
+              {...register("departamento")}
+              onChange={(e) => {
+                setValue("departamento", e.target.value, {
+                  shouldValidate: true,
+                });
+                setValue("provincia", "", {
+                  shouldValidate: true,
+                });
+              }}
+              className={inputClass(!!errors.departamento)}
+            >
+              <option value="">Selecciona aquí 🔽</option>
+              {peruLocations.map((item) => (
+                <option key={item.departamento} value={item.departamento}>
+                  {item.departamento}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
+            <label className="text-sm font-black">Provincia *</label>
+            <select
+              {...register("provincia")}
+              disabled={!selectedDepartamento}
+              className={inputClass(!!errors.provincia)}
+            >
+              <option value="">Selecciona aquí 🔽</option>
+              {provincias.map((provincia) => (
+                <option key={provincia} value={provincia}>
+                  {provincia}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
+            <label className="text-sm font-black">Distrito *</label>
+            <input
+              {...register("distrito")}
+              placeholder="Ej: El Tambo"
+              className={inputClass(!!errors.distrito)}
+            />
+          </div>
+
+          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
+            <label className="text-sm font-black">Dirección exacta *</label>
+            <input
+              {...register("direccion")}
+              placeholder="Ej: Av Luis Montero 211 Castilla"
+              className={inputClass(!!errors.direccion)}
+            />
+          </div>
+
+          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
+            <label className="text-sm font-black">Referencia *</label>
+            <input
+              {...register("referencia")}
+              placeholder="Ej: Al frente del hospital"
+              className={inputClass(!!errors.referencia)}
+            />
+          </div>
+
           <button
             type="submit"
-            className="w-full py-4 mt-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-extrabold text-lg rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.01] transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer"
+            className="w-full bg-pink-600 py-4 text-base font-black text-white hover:bg-pink-700"
           >
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            ENVIAR PEDIDO POR WHATSAPP
+            🛒 ¡Clic aquí para pedir! - S/. {total.toFixed(2)}
           </button>
         </form>
       </div>
