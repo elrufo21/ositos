@@ -28,7 +28,7 @@ const offers = [
     finalPrice: 165,
     badge: "⭐ MÁS VENDIDO",
     badgeColor: "#f59e0b",
-    subtitle: "Mejor para compartir",
+    subtitle: "Pack Papá e hijo",
     saving: "Ahorras S/. 13",
   },
   {
@@ -37,9 +37,9 @@ const offers = [
     quantity: 3,
     unitPrice: UNIT_PRICE,
     finalPrice: 239,
-    badge: "💰 AHORRA MÁS",
+    badge: "💰 PARA MAMÁ TAMBIÉN",
     badgeColor: "#10b981",
-    subtitle: "La mejor opción",
+    subtitle: "Ahorra más",
     saving: "Ahorras S/. 28",
   },
 ];
@@ -115,24 +115,24 @@ const shippingMethods = [
   {
     id: "casa",
     icon: "📦",
-    label: "Pago en Casa",
-    description: "Pagas cuando recibes",
+    label: "PAGO EN LIMA CONTRAENTREGA",
+    description: "(previo adelanto)",
     extra: null,
     price: "Gratis",
   },
   {
     id: "shalom",
     icon: "🚛",
-    label: "Envío por Shalom",
-    description: "Adelanto de S/20 y diferencia pagas al recojer.",
+    label: "ENVÍO POR SHALOM",
+    description: "",
     extra: null,
     price: "Gratis",
   },
   {
     id: "agencias",
     icon: "🚚",
-    label: "Envío por Otras Agencias",
-    description: "Olva, Marvisur, Sanchez, etc. Pago por adelantado 100%",
+    label: "ENVÍO POR OLVA",
+    description: "",
     extra: null,
     price: "Gratis",
   },
@@ -640,7 +640,7 @@ export default function OrderModal({
           {/* ── Delivery note ── */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
             <p className="text-sm font-bold text-blue-700">
-              📅 Entrega para Lima al día siguiente y Provincia de 2 a 3 días
+              📅 Recibe tu pedido entre el 18 y el 19 de Junio
             </p>
           </div>
 
@@ -829,10 +829,6 @@ export default function OrderModal({
                 {discountApplied && " ✅ Descuento aplicado"}
               </span>
             </button>
-            <p className="text-center text-xs text-gray-500">
-              📲 Te escribiremos por WhatsApp o llamaremos para confirmar tu
-              pedido
-            </p>
           </div>
         </form>
 

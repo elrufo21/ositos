@@ -44,13 +44,21 @@ img {
 }
 
 @keyframes marquee {
-  from {
-    transform: translateX(0);
+  0% {
+    transform: translate3d(0, 0, 0);
   }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
 
-  to {
-    transform: translateX(-50%);
-  }
+.promo-bar__track {
+  width: max-content;
+  animation: marquee 24s linear infinite;
+}
+
+.promo-bar__item {
+  white-space: nowrap;
 }
 
 @keyframes pulse-soft {
@@ -67,7 +75,7 @@ img {
 }
 
 .animate-marquee {
-  animation: marquee 22s linear infinite;
+  animation: marquee 24s linear infinite;
 }
 
 .animate-pulse-slow {

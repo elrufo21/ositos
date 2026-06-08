@@ -72,7 +72,7 @@ export default function ProductLandingPage() {
         onClose={() => setIsModalOpen(false)}
       />
 
-      <WhatsappButton phone={product.whatsapp} />
+      {/** <WhatsappButton phone={product.whatsapp} /> */}
 
       <Footer />
       <RecentPurchaseToast />

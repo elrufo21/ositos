@@ -4,7 +4,9 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 text-center">
         <div className="mb-4">
           <span className="text-2xl">🧸</span>
-          <h2 className="text-xl font-bold text-white mt-1 tracking-wide">OSITOS</h2>
+          <h2 className="text-xl font-bold text-white mt-1 tracking-wide">
+            WAWAS R US
+          </h2>
         </div>
         <p className="text-sm mb-2">
           Poleras personalizadas para toda la familia
@@ -14,7 +16,8 @@ export default function Footer() {
         </p>
         <div className="mt-6 h-px w-32 bg-gray-700 mx-auto" />
         <p className="text-xs text-gray-600 mt-4">
-          © {new Date().getFullYear()} OSITOS. Todos los derechos reservados.
+          © {new Date().getFullYear()} WAWAS R US. Todos los derechos
+          reservados.
         </p>
       </div>
     </footer>

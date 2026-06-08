@@ -87,22 +87,22 @@ export default function RecentPurchaseToast() {
   const [counter, setCounter] = useState(0);
 
   useEffect(() => {
-    // First toast after 3s, then every 8-14s
+    // First toast after 4s, then every 12-18s
     const showToast = () => {
       const newToast = buildToast(Date.now());
       setToast(newToast);
       setVisible(true);
 
-      // Auto-hide after 4.5s
+      // Auto-hide after 6s to feel more realistic
       setTimeout(() => {
         setVisible(false);
-      }, 4500);
+      }, 6000);
     };
 
     const initialTimer = setTimeout(() => {
       showToast();
       setCounter((c) => c + 1);
-    }, 3000);
+    }, 4000);
 
     return () => clearTimeout(initialTimer);
   }, []);
@@ -110,12 +110,12 @@ export default function RecentPurchaseToast() {
   useEffect(() => {
     if (counter === 0) return;
 
-    const delay = Math.floor(Math.random() * 6000) + 8000; // 8–14s
+    const delay = Math.floor(Math.random() * 6000) + 12000; // 12–18s
     const timer = setTimeout(() => {
       const newToast = buildToast(Date.now());
       setToast(newToast);
       setVisible(true);
-      setTimeout(() => setVisible(false), 4500);
+      setTimeout(() => setVisible(false), 6000);
       setCounter((c) => c + 1);
     }, delay);
 

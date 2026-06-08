@@ -1,11 +1,12 @@
-import type { OrderFormData } from '../types/product';
+import type { OrderFormData } from "../types/product";
 
 export function buildWhatsAppUrl(
   phone: string,
   productName: string,
-  order: OrderFormData
+  order: OrderFormData,
 ): string {
-  const message = `🧸 *NUEVO PEDIDO - WAWAS R US*\n\n` +
+  const message =
+    `🧸 *NUEVO PEDIDO - WAWAS R US*\n\n` +
     `📦 *Producto:* ${productName}\n` +
     `🎨 *Color:* ${order.color}\n` +
     `📏 *Talla:* ${order.talla}\n` +

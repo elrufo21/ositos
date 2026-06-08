@@ -5,8 +5,8 @@ const ositosProductPath = "/products/polera-personalizada-ositos";
 export const products: Product[] = [
   {
     slug: "polera-personalizada-ositos",
-    brand: 'WAWAS R US',
-    name: 'Polera Personalizada WAWAS R US',
+    brand: "WAWAS R US",
+    name: "Polera Personalizada WAWAS R US",
     price: 89,
     oldPrice: 129,
     whatsapp: "51994991371",

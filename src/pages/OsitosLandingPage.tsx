@@ -1,39 +1,47 @@
-import { useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
-import { products } from '../data/products';
+import { useMemo, useState } from "react";
+import { Helmet } from "react-helmet-async";
+import { products } from "../data/products";
 
 const quickBenefits = [
-  'Algodón premium',
-  'Nombre personalizado',
-  'Tallas para toda la familia',
-  'Envíos a todo el Perú',
+  "Algodón premium",
+  "Nombre personalizado",
+  "Tallas para toda la familia",
+  "Envíos a todo el Perú",
 ];
 
 const orderSteps = [
-  ['1', 'Elige tu pack', 'Selecciona 1, 2 o 3 poleras según tu familia.'],
-  ['2', 'Envía el nombre', 'Coordinamos por WhatsApp el nombre, talla y color.'],
-  ['3', 'Recibe tu pedido', 'Lo preparamos personalizado y te ayudamos con el envío.'],
+  ["1", "Elige tu pack", "Selecciona 1, 2 o 3 poleras según tu familia."],
+  [
+    "2",
+    "Envía el nombre",
+    "Coordinamos por WhatsApp el nombre, talla y color.",
+  ],
+  [
+    "3",
+    "Recibe tu pedido",
+    "Lo preparamos personalizado y te ayudamos con el envío.",
+  ],
 ];
 
 const sizes = [
-  ['Baby', '0-24M', 'Desde recién nacido'],
-  ['Kids', 'T4-T16', 'Niños y niñas'],
-  ['Mujer', 'S-XL', 'Corte cómodo'],
-  ['Hombre', 'S-XL', 'Fit regular'],
+  ["Baby", "0-24M", "Desde recién nacido"],
+  ["Kids", "T4-T16", "Niños y niñas"],
+  ["Mujer", "S-XL", "Corte cómodo"],
+  ["Hombre", "S-XL", "Fit regular"],
 ];
 
 const reviews = [
   {
-    name: 'Valentina R.',
-    text: 'Lo pedí para mi esposo y mi hijo. La tela se siente gruesita y el nombre quedó precioso.',
+    name: "Valentina R.",
+    text: "Lo pedí para mi esposo y mi hijo. La tela se siente gruesita y el nombre quedó precioso.",
   },
   {
-    name: 'Camila T.',
-    text: 'Llegó listo para regalo. Los colores son iguales a las fotos y la atención fue súper rápida.',
+    name: "Camila T.",
+    text: "Llegó listo para regalo. Los colores son iguales a las fotos y la atención fue súper rápida.",
   },
   {
-    name: 'Luciana M.',
-    text: 'Compré el pack familiar y fue un éxito para nuestras fotos. Muy cómodo para usar también.',
+    name: "Luciana M.",
+    text: "Compré el pack familiar y fue un éxito para nuestras fotos. Muy cómodo para usar también.",
   },
 ];
 
@@ -44,14 +52,15 @@ export default function OsitosLandingPage() {
 
   const packs = useMemo(
     () => [
-      { count: 1, label: '1 polera', price: product.price, note: 'Para papá' },
-      { count: 2, label: '2 poleras', price: 165, note: 'Papá + hijo' },
-      { count: 3, label: '3 poleras', price: 239, note: 'Pack familiar' },
+      { count: 1, label: "1 polera", price: product.price, note: "Para papá" },
+      { count: 2, label: "2 poleras", price: 165, note: "Papá + hijo" },
+      { count: 3, label: "3 poleras", price: 239, note: "Pack familiar" },
     ],
     [product.price],
   );
 
-  const selectedDeal = packs.find((pack) => pack.count === selectedPack) ?? packs[0];
+  const selectedDeal =
+    packs.find((pack) => pack.count === selectedPack) ?? packs[0];
   const whatsappText = encodeURIComponent(
     `Hola, quiero pedir ${selectedDeal.label} WAWAS R US personalizado. Precio S/ ${selectedDeal.price}.`,
   );
@@ -71,7 +80,10 @@ export default function OsitosLandingPage() {
         <div className="ositos-v2__ticker">
           <div>
             {Array.from({ length: 6 }).map((_, index) => (
-              <span key={index}>Stock limitado / Personalizado con nombre / Envíos a todo el Perú</span>
+              <span key={index}>
+                Stock limitado / Personalizado con nombre / Envíos a todo el
+                Perú
+              </span>
             ))}
           </div>
         </div>
@@ -105,7 +117,7 @@ export default function OsitosLandingPage() {
                 <button
                   type="button"
                   key={image}
-                  className={activeImage === index ? 'is-active' : ''}
+                  className={activeImage === index ? "is-active" : ""}
                   onClick={() => setActiveImage(index)}
                   aria-label={`Ver foto ${index + 1}`}
                 >
@@ -137,7 +149,7 @@ export default function OsitosLandingPage() {
                 <button
                   type="button"
                   key={pack.count}
-                  className={selectedPack === pack.count ? 'is-selected' : ''}
+                  className={selectedPack === pack.count ? "is-selected" : ""}
                   onClick={() => setSelectedPack(pack.count)}
                 >
                   <b>{pack.label}</b>
@@ -153,7 +165,12 @@ export default function OsitosLandingPage() {
               ))}
             </div>
 
-            <a className="ositos-v2__cta" href={whatsappUrl} target="_blank" rel="noreferrer">
+            <a
+              className="ositos-v2__cta"
+              href={whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
               Pedir por WhatsApp
             </a>
           </div>
@@ -212,9 +229,15 @@ export default function OsitosLandingPage() {
             <p className="ositos-v2__eyebrow">Listo para regalar</p>
             <h2>Personalízalo hoy y coordina tu pedido por WhatsApp.</h2>
             <p>
-              Te ayudamos a elegir talla, color y cantidad antes de confirmar tu compra.
+              Te ayudamos a elegir talla, color y cantidad antes de confirmar tu
+              compra.
             </p>
-            <a className="ositos-v2__cta" href={whatsappUrl} target="_blank" rel="noreferrer">
+            <a
+              className="ositos-v2__cta"
+              href={whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
               Quiero el mío
             </a>
           </div>
