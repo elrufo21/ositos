@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,8 +15,10 @@ const offers = [
     quantity: 1,
     unitPrice: UNIT_PRICE,
     finalPrice: 89,
-    badge: "",
+    badge: "🚨 ÚLTIMAS UNIDADES",
+    badgeColor: "#ef4444",
     subtitle: "Ideal para ti",
+    saving: null,
   },
   {
     id: 2,
@@ -24,8 +26,10 @@ const offers = [
     quantity: 2,
     unitPrice: UNIT_PRICE,
     finalPrice: 165,
-    badge: "MÁS PEDIDO",
+    badge: "⭐ MÁS VENDIDO",
+    badgeColor: "#f59e0b",
     subtitle: "Mejor para compartir",
+    saving: "Ahorras S/. 13",
   },
   {
     id: 3,
@@ -33,8 +37,10 @@ const offers = [
     quantity: 3,
     unitPrice: UNIT_PRICE,
     finalPrice: 239,
-    badge: "PARA MAMÁ TAMBIÉN",
+    badge: "💰 AHORRA MÁS",
+    badgeColor: "#10b981",
     subtitle: "La mejor opción",
+    saving: "Ahorras S/. 28",
   },
 ];
 
@@ -71,32 +77,31 @@ const sizeTables = {
   ],
 };
 
-const peruLocations = [
-  {
-    departamento: "Lima",
-    provincias: ["Lima", "Cañete", "Huaral", "Huaura", "Barranca"],
-  },
-  {
-    departamento: "Junín",
-    provincias: ["Huancayo", "Chupaca", "Concepción", "Jauja", "Tarma"],
-  },
-  {
-    departamento: "Arequipa",
-    provincias: ["Arequipa", "Camaná", "Islay", "Caylloma"],
-  },
-  {
-    departamento: "Cusco",
-    provincias: ["Cusco", "Urubamba", "Calca", "La Convención"],
-  },
-  {
-    departamento: "La Libertad",
-    provincias: ["Trujillo", "Ascope", "Chepén", "Pacasmayo"],
-  },
-  {
-    departamento: "Piura",
-    provincias: ["Piura", "Sullana", "Talara", "Paita"],
-  },
-];
+import { reniec as ubigeoData } from "ubigeo-peru";
+
+type UbigeoEntry = {
+  departamento: string;
+  provincia: string;
+  distrito: string;
+  nombre: string;
+};
+const allUbigeo = Object.values(ubigeoData) as UbigeoEntry[];
+
+const departamentos = allUbigeo.filter(
+  (d) => d.provincia === "00" && d.distrito === "00",
+);
+
+const getProvincias = (depId: string) =>
+  allUbigeo.filter(
+    (d) =>
+      d.departamento === depId && d.provincia !== "00" && d.distrito === "00",
+  );
+
+const getDistritos = (depId: string, provId: string) =>
+  allUbigeo.filter(
+    (d) =>
+      d.departamento === depId && d.provincia === provId && d.distrito !== "00",
+  );
 
 type SizeType = keyof typeof sizeTables;
 
@@ -106,12 +111,39 @@ interface OrderItem {
   talla: string;
 }
 
+const shippingMethods = [
+  {
+    id: "casa",
+    icon: "📦",
+    label: "Pago en Casa",
+    description: "Pagas cuando recibes",
+    extra: null,
+    price: "Gratis",
+  },
+  {
+    id: "shalom",
+    icon: "🚛",
+    label: "Envío por Shalom",
+    description: "Adelanto de S/20 y diferencia pagas al recojer.",
+    extra: null,
+    price: "Gratis",
+  },
+  {
+    id: "agencias",
+    icon: "🚚",
+    label: "Envío por Otras Agencias",
+    description: "Olva, Marvisur, Sanchez, etc. Pago por adelantado 100%",
+    extra: null,
+    price: "Gratis",
+  },
+];
+
 const orderSchema = z.object({
   nombre: z.string().min(3, "Ingresa tu nombre completo"),
   celular: z.string().min(9, "Ingresa un celular válido").max(15),
-  departamento: z.string().min(2, "Selecciona tu departamento"),
-  provincia: z.string().min(2, "Selecciona tu provincia"),
-  distrito: z.string().min(2, "Ingresa tu distrito"),
+  departamentoId: z.string().min(1, "Selecciona tu departamento"),
+  provinciaId: z.string().min(1, "Selecciona tu provincia"),
+  distritoId: z.string().min(1, "Selecciona tu distrito"),
   direccion: z.string().min(5, "Ingresa tu dirección completa"),
   referencia: z.string().min(3, "Ingresa una referencia"),
 });
@@ -129,7 +161,50 @@ export default function OrderModal({
   isOpen,
   onClose,
 }: OrderModalProps) {
+  const INITIAL_SECONDS = 15 * 60;
   const [selectedOffer, setSelectedOffer] = useState(offers[1]);
+  const [selectedShipping, setSelectedShipping] = useState("casa");
+  const [secondsLeft, setSecondsLeft] = useState(INITIAL_SECONDS);
+  const [viewers, setViewers] = useState(19);
+  const [stock, setStock] = useState(23);
+  const [showExitPopup, setShowExitPopup] = useState(false);
+  const [discountApplied, setDiscountApplied] = useState(false);
+  const DISCOUNT_AMOUNT = 5;
+  const popupDismissed = useRef(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      popupDismissed.current = false;
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const countdown = setInterval(() => {
+      setSecondsLeft((prev) => (prev <= 1 ? INITIAL_SECONDS : prev - 1));
+    }, 1000);
+    const viewersInterval = setInterval(() => {
+      setViewers(Math.floor(Math.random() * 18) + 7);
+    }, 5000);
+    const stockInterval = setInterval(() => {
+      setStock((prev) => (prev <= 12 ? 23 : prev - 1));
+    }, 10000);
+    return () => {
+      clearInterval(countdown);
+      clearInterval(viewersInterval);
+      clearInterval(stockInterval);
+    };
+  }, []);
+
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
+  const timerText = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  const stockPercent = Math.round((stock / 23) * 100);
 
   const [items, setItems] = useState<OrderItem[]>(
     Array.from({ length: offers[1].quantity }, () => ({
@@ -150,37 +225,50 @@ export default function OrderModal({
     defaultValues: {
       nombre: "",
       celular: "",
-      departamento: "",
-      provincia: "",
-      distrito: "",
+      departamentoId: "",
+      provinciaId: "",
+      distritoId: "",
       direccion: "",
       referencia: "",
     },
   });
 
-  const selectedDepartamento = useWatch({
-    control,
-    name: "departamento",
-  });
+  const selectedDepId = useWatch({ control, name: "departamentoId" });
+  const selectedProvId = useWatch({ control, name: "provinciaId" });
 
-  const provincias =
-    peruLocations.find((item) => item.departamento === selectedDepartamento)
-      ?.provincias || [];
+  const provincias = selectedDepId ? getProvincias(selectedDepId) : [];
+  const distritos =
+    selectedDepId && selectedProvId
+      ? getDistritos(selectedDepId, selectedProvId)
+      : [];
 
   const subtotal = selectedOffer.unitPrice * selectedOffer.quantity;
   const descuento = subtotal - selectedOffer.finalPrice;
-  const total = selectedOffer.finalPrice + ENVIO_PERU;
+  const discountExtra = discountApplied ? DISCOUNT_AMOUNT : 0;
+  const total = selectedOffer.finalPrice + ENVIO_PERU - discountExtra;
 
-  const inputClass = (hasError?: boolean) =>
-    `w-full h-11 rounded-md border px-3 text-sm outline-none bg-white ${
-      hasError
-        ? "border-red-400 focus:ring-2 focus:ring-red-200"
-        : "border-gray-300 focus:border-pink-500 focus:ring-2 focus:ring-pink-200"
-    }`;
+  const handleCloseAttempt = () => {
+    if (!popupDismissed.current && !discountApplied) {
+      setShowExitPopup(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleApplyDiscount = () => {
+    setDiscountApplied(true);
+    setShowExitPopup(false);
+    popupDismissed.current = true;
+  };
+
+  const handleDeclineDiscount = () => {
+    popupDismissed.current = true;
+    setShowExitPopup(false);
+    onClose();
+  };
 
   const selectOffer = (offer: (typeof offers)[number]) => {
     setSelectedOffer(offer);
-
     setItems(
       Array.from({ length: offer.quantity }, (_, index) => ({
         tipo: items[index]?.tipo || "Mujer",
@@ -194,42 +282,47 @@ export default function OrderModal({
     setItems((prev) =>
       prev.map((item, i) => {
         if (i !== index) return item;
-
         if (field === "tipo") {
           const newTipo = value as SizeType;
-
           return {
             ...item,
             tipo: newTipo,
             talla: sizeTables[newTipo][0].talla,
           };
         }
-
-        return {
-          ...item,
-          [field]: value,
-        };
+        return { ...item, [field]: value };
       }),
     );
   };
 
-  const getSizeInfo = (tipo: SizeType, talla: string) => {
-    return sizeTables[tipo].find((item) => item.talla === talla);
-  };
+  const getSizeInfo = (tipo: SizeType, talla: string) =>
+    sizeTables[tipo].find((item) => item.talla === talla);
 
   const onSubmit = (data: OrderFormInput) => {
+    const depNombre =
+      departamentos.find((d) => d.departamento === data.departamentoId)
+        ?.nombre ?? data.departamentoId;
+    const provNombre =
+      getProvincias(data.departamentoId).find(
+        (p) => p.provincia === data.provinciaId,
+      )?.nombre ?? data.provinciaId;
+    const distNombre =
+      getDistritos(data.departamentoId, data.provinciaId).find(
+        (d) => d.distrito === data.distritoId,
+      )?.nombre ?? data.distritoId;
+
     const detalleProductos = items
       .map((item, index) => {
         const sizeInfo = getSizeInfo(item.tipo, item.talla);
-
-        return `#${index + 1}: ${item.tipo} / Color: ${item.color} / Talla: ${
-          item.talla
-        } / A:${sizeInfo?.a ?? "-"} B:${sizeInfo?.b ?? "-"}`;
+        return `#${index + 1}: ${item.tipo} / Color: ${item.color} / Talla: ${item.talla} / A:${sizeInfo?.a ?? "-"} B:${sizeInfo?.b ?? "-"}`;
       })
       .join(" | ");
 
     const messageData = {
       ...data,
+      departamento: depNombre,
+      provincia: provNombre,
+      distrito: distNombre,
       cantidad: selectedOffer.quantity,
       color: items.map((item, i) => `#${i + 1}: ${item.color}`).join(", "),
       talla: detalleProductos,
@@ -242,68 +335,158 @@ export default function OrderModal({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-3">
-      <div className="relative max-h-[95vh] w-full max-w-[560px] overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-4 top-3 text-2xl font-light"
-        >
-          ×
-        </button>
+  const inputBase =
+    "w-full h-11 rounded-lg border px-3 text-sm outline-none transition-all bg-white";
+  const inputNormal = `${inputBase} border-gray-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100`;
+  const inputError = `${inputBase} border-red-400 focus:ring-2 focus:ring-red-100`;
+  const inp = (hasError?: boolean) => (hasError ? inputError : inputNormal);
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-6">
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+      <div
+        className="relative w-full max-w-[580px] max-h-[97vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl"
+        style={{ fontFamily: "'Segoe UI', system-ui, sans-serif" }}
+      >
+        <style>{`
+          @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.8)} }
+          @keyframes shake {
+            0%,100%{transform:translateX(0) rotate(0deg)}
+            10%{transform:translateX(-6px) rotate(-1deg)}
+            20%{transform:translateX(6px) rotate(1deg)}
+            30%{transform:translateX(-5px) rotate(-0.5deg)}
+            40%{transform:translateX(5px) rotate(0.5deg)}
+            50%{transform:translateX(-4px)}
+            60%{transform:translateX(4px)}
+            70%{transform:translateX(-3px)}
+            80%{transform:translateX(3px)}
+            90%{transform:translateX(-1px)}
+          }
+          @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+          @keyframes popIn { from{opacity:0;transform:scale(.85)} to{opacity:1;transform:scale(1)} }
+          @keyframes sealSpin { from{transform:rotate(-5deg) scale(.9)} to{transform:rotate(5deg) scale(1.05)} }
+          .shake-btn { animation: shake 1s ease-in-out infinite; }
+          .fade-up { animation: fadeUp .4s ease-out; }
+          .dot-pulse { animation: pulse-dot 1.2s ease-in-out infinite; }
+          .pop-in { animation: popIn .3s cubic-bezier(.34,1.56,.64,1); }
+          .seal { animation: sealSpin 1.2s ease-in-out infinite alternate; }
+        `}</style>
+
+        {/* ── Header strip ── */}
+        <div className="sticky top-0 z-30 bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between">
+          <div className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 dot-pulse inline-block" />
+            {viewers} personas viendo ahora
+          </div>
+          <button
+            onClick={handleCloseAttempt}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 text-lg font-light transition-colors"
+          >
+            ×
+          </button>
+        </div>
+
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="px-5 pt-4 pb-6 space-y-5"
+        >
+          {/* ── Guarantee + Trust ── */}
+          <div className="fade-up text-center space-y-2">
+            <p className="text-lg font-black text-gray-800">
+              Garantía de 90 días por tu pedido
+            </p>
+            <div className="flex items-center justify-center gap-1 text-amber-500 text-sm font-bold">
+              {"⭐".repeat(5)}
+              <span className="text-gray-600 font-normal ml-1">
+                (4.8/5) en +1800 testimonios
+              </span>
+            </div>
+            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-xs font-bold px-4 py-2 rounded-full border border-blue-100">
+              👥 Más de 758 familias ya compraron
+            </div>
+          </div>
+
+          {/* ── Urgency bar ── */}
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-bold text-red-700">
+                🔥 Solo quedan {stock} unidades
+              </span>
+              <span className="font-black text-red-600 bg-red-100 px-2 py-0.5 rounded-lg text-xs">
+                ⏰ {timerText}
+              </span>
+            </div>
+            <div className="h-2.5 bg-red-100 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${stockPercent}%`,
+                  background: "linear-gradient(90deg, #f87171, #ef4444)",
+                }}
+              />
+            </div>
+            <p className="text-xs text-red-500 font-medium">
+              🚚 Envío a todo el Perú — ¡Pide ahora antes que se agote!
+            </p>
+          </div>
+
+          {/* ── Offer cards ── */}
           <div className="space-y-3">
+            <p className="text-sm font-black text-gray-700 uppercase tracking-wide">
+              Elige tu paquete
+            </p>
             {offers.map((offer) => {
               const active = selectedOffer.id === offer.id;
               const offerSubtotal = offer.unitPrice * offer.quantity;
-
               return (
                 <div
                   key={offer.id}
                   onClick={() => selectOffer(offer)}
-                  className={`relative cursor-pointer rounded-3xl border p-4 transition-all ${
+                  className={`relative cursor-pointer rounded-2xl border-2 p-4 transition-all duration-200 ${
                     active
-                      ? "border-fuchsia-500 bg-fuchsia-50 ring-1 ring-fuchsia-500"
-                      : "border-gray-300 bg-white"
+                      ? "border-violet-500 bg-violet-50 shadow-md shadow-violet-100"
+                      : "border-gray-200 bg-white hover:border-gray-300"
                   }`}
                 >
                   {offer.badge && (
-                    <div className="absolute -top-3 right-6 rounded-sm bg-pink-600 px-4 py-1 text-xs font-black text-white">
+                    <span
+                      className="absolute -top-3 right-3 text-white text-xs font-extrabold px-3 py-1 rounded-full shadow-sm"
+                      style={{ background: offer.badgeColor }}
+                    >
                       {offer.badge}
-                    </div>
+                    </span>
                   )}
 
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <span
-                        className={`flex h-5 w-5 items-center justify-center rounded-full border ${
-                          active ? "border-fuchsia-600" : "border-gray-300"
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                          active ? "border-violet-600" : "border-gray-300"
                         }`}
                       >
                         {active && (
-                          <span className="h-3 w-3 rounded-full bg-fuchsia-600" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-violet-600" />
                         )}
-                      </span>
-
+                      </div>
                       <div>
-                        <p className="text-sm font-black sm:text-base">
+                        <p className="font-black text-gray-800 text-sm sm:text-base">
                           {offer.title}
                         </p>
                         <p className="text-xs text-gray-500">
                           {offer.subtitle}
                         </p>
+                        {offer.saving && (
+                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full mt-1 inline-block">
+                            ✅ {offer.saving}
+                          </span>
+                        )}
                       </div>
                     </div>
-
-                    <div className="text-right">
-                      <p className="text-xl font-black">
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xl font-black text-gray-900">
                         S/. {offer.finalPrice.toFixed(2)}
                       </p>
-
                       {offerSubtotal !== offer.finalPrice && (
-                        <p className="text-sm line-through">
+                        <p className="text-xs text-gray-400 line-through">
                           S/. {offerSubtotal.toFixed(2)}
                         </p>
                       )}
@@ -311,27 +494,31 @@ export default function OrderModal({
                   </div>
 
                   {active && (
-                    <div className="mt-4 space-y-2">
-                      <div className="grid grid-cols-[35px_1fr_1fr_1fr] gap-2 text-xs font-bold sm:text-sm">
-                        <span></span>
+                    <div className="mt-4 space-y-2 fade-up">
+                      <div
+                        className="grid gap-2 text-xs font-bold text-gray-500 uppercase tracking-wide"
+                        style={{ gridTemplateColumns: "30px 1fr 1fr 1fr" }}
+                      >
+                        <span />
                         <span>Tipo</span>
                         <span>Color</span>
                         <span>Talla</span>
                       </div>
-
                       {items.map((item, index) => (
                         <div
                           key={index}
-                          className="grid grid-cols-[35px_1fr_1fr_1fr] items-center gap-2"
+                          className="grid gap-2 items-center"
+                          style={{ gridTemplateColumns: "30px 1fr 1fr 1fr" }}
                         >
-                          <span className="font-black">#{index + 1}</span>
-
+                          <span className="text-xs font-black text-violet-600">
+                            #{index + 1}
+                          </span>
                           <select
                             value={item.tipo}
                             onChange={(e) =>
                               updateItem(index, "tipo", e.target.value)
                             }
-                            className={inputClass()}
+                            className={inp()}
                           >
                             {Object.keys(sizeTables).map((tipo) => (
                               <option key={tipo} value={tipo}>
@@ -339,13 +526,12 @@ export default function OrderModal({
                               </option>
                             ))}
                           </select>
-
                           <select
                             value={item.color}
                             onChange={(e) =>
                               updateItem(index, "color", e.target.value)
                             }
-                            className={inputClass()}
+                            className={inp()}
                           >
                             {colors.map((color) => (
                               <option key={color} value={color}>
@@ -353,17 +539,16 @@ export default function OrderModal({
                               </option>
                             ))}
                           </select>
-
                           <select
                             value={item.talla}
                             onChange={(e) =>
                               updateItem(index, "talla", e.target.value)
                             }
-                            className={inputClass()}
+                            className={inp()}
                           >
                             {sizeTables[item.tipo].map((size) => (
                               <option key={size.talla} value={size.talla}>
-                                {size.talla} - A:{size.a} B:{size.b}
+                                {size.talla} · A:{size.a} B:{size.b}
                               </option>
                             ))}
                           </select>
@@ -376,128 +561,335 @@ export default function OrderModal({
             })}
           </div>
 
-          <div className="rounded-md border border-gray-300 p-3 text-sm sm:text-base">
-            <div className="flex justify-between">
+          {/* ── Shipping methods ── */}
+          <div className="space-y-2">
+            <p className="text-sm font-black text-gray-700 uppercase tracking-wide">
+              Método de Envío
+            </p>
+            {shippingMethods.map((method) => {
+              const active = selectedShipping === method.id;
+              return (
+                <div
+                  key={method.id}
+                  onClick={() => setSelectedShipping(method.id)}
+                  className={`cursor-pointer rounded-xl border p-3 flex items-start gap-3 transition-all ${
+                    active
+                      ? "border-violet-400 bg-violet-50"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                >
+                  <div
+                    className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      active ? "border-violet-600" : "border-gray-300"
+                    }`}
+                  >
+                    {active && (
+                      <div className="w-2 h-2 rounded-full bg-violet-600" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-800">
+                      {method.icon} {method.label}:
+                    </p>
+                    <p className="text-xs text-gray-500 leading-snug">
+                      {method.description}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-emerald-600 flex-shrink-0">
+                    {method.price}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── Order summary ── */}
+          <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-2 text-sm">
+            <div className="flex justify-between text-gray-600">
               <span>Subtotal</span>
-              <strong>S/. {subtotal.toFixed(2)}</strong>
+              <span className="font-semibold">S/. {subtotal.toFixed(2)}</span>
             </div>
-
-            <div className="mt-2 flex justify-between">
-              <span>🏷 Descuento</span>
-              <strong className="text-red-500">
-                -S/. {descuento.toFixed(2)}
-              </strong>
-            </div>
-
-            <div className="mt-2 flex justify-between">
+            {descuento > 0 && (
+              <div className="flex justify-between text-emerald-600">
+                <span>🏷 Descuento</span>
+                <span className="font-bold">−S/. {descuento.toFixed(2)}</span>
+              </div>
+            )}
+            {discountApplied && (
+              <div className="flex justify-between text-orange-600">
+                <span>🎟 Cupón especial</span>
+                <span className="font-bold">
+                  −S/. {DISCOUNT_AMOUNT.toFixed(2)}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between text-gray-600">
               <span>🎁 Empaque de regalo</span>
-              <strong>GRATIS</strong>
+              <span className="font-bold text-emerald-600">GRATIS</span>
             </div>
-
-            <div className="mt-2 flex justify-between">
+            <div className="flex justify-between text-gray-600">
               <span>🚚 Envío a todo el Perú</span>
-              <strong>S/. {ENVIO_PERU.toFixed(2)}</strong>
+              <span className="font-semibold">S/. {ENVIO_PERU.toFixed(2)}</span>
             </div>
-
-            <div className="my-3 border-t" />
-
-            <div className="flex justify-between text-lg font-black">
-              <span>Total</span>
-              <span>S/. {total.toFixed(2)}</span>
+            <div className="border-t border-gray-200 pt-2 flex justify-between text-base font-black text-gray-900">
+              <span>Total a pagar</span>
+              <span className="text-violet-700">S/. {total.toFixed(2)}</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
-            <label className="text-sm font-black">Nombre y Apellidos *</label>
-            <input
-              {...register("nombre")}
-              placeholder="Nombre Completo"
-              className={inputClass(!!errors.nombre)}
-            />
+          {/* ── Delivery note ── */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
+            <p className="text-sm font-bold text-blue-700">
+              📅 Entrega para Lima al día siguiente y Provincia de 2 a 3 días
+            </p>
           </div>
 
-          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
-            <label className="text-sm font-black">Celular o Teléfono *</label>
-            <input
-              {...register("celular")}
-              placeholder="Ej: 933832272"
-              className={inputClass(!!errors.celular)}
-            />
+          {/* ── Customer info section ── */}
+          <div className="space-y-3">
+            <p className="text-sm font-black text-gray-700 uppercase tracking-wide text-center">
+              Completa tu información
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-gray-600 mb-1 block">
+                  Nombre y Apellidos *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">
+                    👤
+                  </span>
+                  <input
+                    {...register("nombre")}
+                    placeholder="Nombres y Apellidos"
+                    className={`${inp(!!errors.nombre)} pl-9`}
+                  />
+                </div>
+                {errors.nombre && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.nombre.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-600 mb-1 block">
+                  Celular o WhatsApp *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">
+                    📱
+                  </span>
+                  <input
+                    {...register("celular")}
+                    placeholder="Celular o WhatsApp"
+                    className={`${inp(!!errors.celular)} pl-9`}
+                  />
+                </div>
+                {errors.celular && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.celular.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-600 mb-1 block">
+                    Departamento *
+                  </label>
+                  <select
+                    {...register("departamentoId")}
+                    onChange={(e) => {
+                      setValue("departamentoId", e.target.value, {
+                        shouldValidate: true,
+                      });
+                      setValue("provinciaId", "", { shouldValidate: false });
+                      setValue("distritoId", "", { shouldValidate: false });
+                    }}
+                    className={inp(!!errors.departamentoId)}
+                  >
+                    <option value="">Selecciona 🔽</option>
+                    {departamentos.map((dep) => (
+                      <option key={dep.departamento} value={dep.departamento}>
+                        {dep.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.departamentoId && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.departamentoId.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-600 mb-1 block">
+                    Provincia *
+                  </label>
+                  <select
+                    {...register("provinciaId")}
+                    disabled={!selectedDepId}
+                    onChange={(e) => {
+                      setValue("provinciaId", e.target.value, {
+                        shouldValidate: true,
+                      });
+                      setValue("distritoId", "", { shouldValidate: false });
+                    }}
+                    className={inp(!!errors.provinciaId)}
+                  >
+                    <option value="">Selecciona 🔽</option>
+                    {provincias.map((prov) => (
+                      <option key={prov.provincia} value={prov.provincia}>
+                        {prov.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.provinciaId && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.provinciaId.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-600 mb-1 block">
+                  Distrito *
+                </label>
+                <select
+                  {...register("distritoId")}
+                  disabled={!selectedProvId}
+                  className={inp(!!errors.distritoId)}
+                >
+                  <option value="">Selecciona 🔽</option>
+                  {distritos.map((dist) => (
+                    <option key={dist.distrito} value={dist.distrito}>
+                      {dist.nombre}
+                    </option>
+                  ))}
+                </select>
+                {errors.distritoId && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.distritoId.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-600 mb-1 block">
+                  Dirección exacta *
+                </label>
+                <input
+                  {...register("direccion")}
+                  placeholder="Ej: Av Luis Montero 211 Castilla"
+                  className={inp(!!errors.direccion)}
+                />
+                {errors.direccion && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.direccion.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-600 mb-1 block">
+                  Referencia *
+                </label>
+                <input
+                  {...register("referencia")}
+                  placeholder="Ej: Al frente del hospital"
+                  className={inp(!!errors.referencia)}
+                />
+                {errors.referencia && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.referencia.message}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
-            <label className="text-sm font-black">Departamento *</label>
-            <select
-              {...register("departamento")}
-              onChange={(e) => {
-                setValue("departamento", e.target.value, {
-                  shouldValidate: true,
-                });
-                setValue("provincia", "", {
-                  shouldValidate: true,
-                });
+          {/* ── CTA ── */}
+          <div className="sticky bottom-0 -mx-5 px-5 pb-5 pt-2 bg-white/90 backdrop-blur-sm space-y-2">
+            <button
+              type="submit"
+              className="shake-btn w-full rounded-2xl py-4 text-base font-black text-white transition-transform active:scale-95 flex flex-col items-center gap-0.5"
+              style={{
+                background:
+                  "linear-gradient(135deg, #b91c1c 0%, #dc2626 50%, #ef4444 100%)",
+                boxShadow:
+                  "0 6px 24px rgba(185,28,28,0.55), 0 2px 8px rgba(0,0,0,0.2)",
+                textShadow: "0 1px 2px rgba(0,0,0,0.3)",
               }}
-              className={inputClass(!!errors.departamento)}
             >
-              <option value="">Selecciona aquí 🔽</option>
-              {peruLocations.map((item) => (
-                <option key={item.departamento} value={item.departamento}>
-                  {item.departamento}
-                </option>
-              ))}
-            </select>
+              <span className="text-lg">🛒 ¡LO QUIERO! + PAGO EN CASA</span>
+              <span className="text-sm font-semibold opacity-90">
+                🚚 Envío a todo el Perú — Total: S/. {total.toFixed(2)}
+                {discountApplied && " ✅ Descuento aplicado"}
+              </span>
+            </button>
+            <p className="text-center text-xs text-gray-500">
+              📲 Te escribiremos por WhatsApp o llamaremos para confirmar tu
+              pedido
+            </p>
           </div>
-
-          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
-            <label className="text-sm font-black">Provincia *</label>
-            <select
-              {...register("provincia")}
-              disabled={!selectedDepartamento}
-              className={inputClass(!!errors.provincia)}
-            >
-              <option value="">Selecciona aquí 🔽</option>
-              {provincias.map((provincia) => (
-                <option key={provincia} value={provincia}>
-                  {provincia}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
-            <label className="text-sm font-black">Distrito *</label>
-            <input
-              {...register("distrito")}
-              placeholder="Ej: El Tambo"
-              className={inputClass(!!errors.distrito)}
-            />
-          </div>
-
-          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
-            <label className="text-sm font-black">Dirección exacta *</label>
-            <input
-              {...register("direccion")}
-              placeholder="Ej: Av Luis Montero 211 Castilla"
-              className={inputClass(!!errors.direccion)}
-            />
-          </div>
-
-          <div className="grid grid-cols-[125px_1fr] items-center gap-3">
-            <label className="text-sm font-black">Referencia *</label>
-            <input
-              {...register("referencia")}
-              placeholder="Ej: Al frente del hospital"
-              className={inputClass(!!errors.referencia)}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-pink-600 py-4 text-base font-black text-white hover:bg-pink-700"
-          >
-            🛒 ¡Clic aquí para pedir! - S/. {total.toFixed(2)}
-          </button>
         </form>
+
+        {/* ── Exit intent popup ── */}
+        {showExitPopup && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="pop-in bg-white rounded-2xl mx-4 p-6 text-center shadow-2xl max-w-sm w-full">
+              <p className="text-2xl font-black text-gray-900 mb-1">¡Espera!</p>
+              <p className="text-sm text-gray-500 mb-3">
+                ¡Felicidades! ¡Acabas de desbloquear un descuento especial!
+              </p>
+              <p className="text-base font-black text-orange-500 mb-3">
+                🎁 ¡Obtén un descuento! 🎁
+              </p>
+
+              {/* Starburst seal */}
+              <div className="flex justify-center mb-4">
+                <div
+                  className="seal w-28 h-28 flex items-center justify-center relative"
+                  style={{
+                    background: "linear-gradient(135deg, #f97316, #ef4444)",
+                    clipPath:
+                      "polygon(50% 0%,61% 15%,79% 9%,80% 28%,97% 32%,88% 48%,97% 64%,80% 68%,79% 87%,61% 81%,50% 95%,39% 81%,21% 87%,20% 68%,3% 64%,12% 48%,3% 32%,20% 28%,21% 9%,39% 15%)",
+                    boxShadow: "none",
+                  }}
+                >
+                  <div className="text-center text-white">
+                    <p className="text-xl font-black leading-tight">S/. 5.00</p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4 font-medium">
+                Si cierras esta página te perderás la oferta
+              </p>
+
+              <button
+                onClick={handleApplyDiscount}
+                className="w-full rounded-xl py-3.5 text-sm font-black text-white mb-3 transition-transform active:scale-95"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #b91c1c 0%, #dc2626 50%, #ef4444 100%)",
+                  boxShadow: "0 4px 16px rgba(185,28,28,0.5)",
+                }}
+              >
+                Completar pedido con S/. 5.00 de DESCUENTO
+              </button>
+
+              <button
+                onClick={handleDeclineDiscount}
+                className="w-full rounded-xl py-3 text-sm font-semibold text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                No, gracias
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
