@@ -5,7 +5,7 @@ import { products } from "../data/products";
 import PromoBar from "../components/PromoBar";
 import FlyerFeed from "../components/FlyerFeed";
 import OrderModal from "../components/OrderModal";
-import WhatsappButton from "../components/WhatsappButton";
+//import WhatsappButton from "../components/WhatsappButton";
 import Footer from "../components/Footer";
 import RecentPurchaseToast from "../components/RecentPurchaseToast";
 
