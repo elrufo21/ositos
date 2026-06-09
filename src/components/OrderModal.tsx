@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { Product, OrderFormData } from "../types/product";
-import { buildWhatsAppUrl } from "../lib/whatsapp";
+import type { Product } from "../types/product";
 
 const ENVIO_PERU = 10;
 const UNIT_PRICE = 89;
+const INITIAL_STOCK = 23;
+const MIN_STOCK = 3;
+const STOCK_DECREMENT_INTERVAL_MS = 45_000;
+const STOCK_SESSION_KEY = "ositos-order-stock-session";
 
 const offers = [
   {
@@ -144,8 +147,8 @@ const orderSchema = z.object({
   departamentoId: z.string().min(1, "Selecciona tu departamento"),
   provinciaId: z.string().min(1, "Selecciona tu provincia"),
   distritoId: z.string().min(1, "Selecciona tu distrito"),
-  direccion: z.string().min(5, "Ingresa tu dirección completa"),
-  referencia: z.string().min(3, "Ingresa una referencia"),
+  direccion: z.string().optional(),
+  referencia: z.string().optional(),
 });
 
 type OrderFormInput = z.input<typeof orderSchema>;
@@ -166,11 +169,13 @@ export default function OrderModal({
   const [selectedShipping, setSelectedShipping] = useState("casa");
   const [secondsLeft, setSecondsLeft] = useState(INITIAL_SECONDS);
   const [viewers, setViewers] = useState(19);
-  const [stock, setStock] = useState(23);
+  const [stock, setStock] = useState(INITIAL_STOCK);
   const [showExitPopup, setShowExitPopup] = useState(false);
   const [discountApplied, setDiscountApplied] = useState(false);
   const DISCOUNT_AMOUNT = 5;
   const popupDismissed = useRef(false);
+  const stockLastUpdatedAtRef = useRef<number | null>(null);
+  const stockRef = useRef(INITIAL_STOCK);
 
   useEffect(() => {
     if (isOpen) {
@@ -191,9 +196,66 @@ export default function OrderModal({
     const viewersInterval = setInterval(() => {
       setViewers(Math.floor(Math.random() * 18) + 7);
     }, 5000);
+
+    const restoreStock = () => {
+      if (typeof window === "undefined") return;
+
+      const saved = sessionStorage.getItem(STOCK_SESSION_KEY);
+      const now = Date.now();
+
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as {
+            stock: number;
+            updatedAt: number;
+          };
+          stockRef.current = Math.max(MIN_STOCK, parsed.stock);
+          stockLastUpdatedAtRef.current = parsed.updatedAt;
+        } catch {
+          stockRef.current = INITIAL_STOCK;
+          stockLastUpdatedAtRef.current = now;
+        }
+      } else {
+        stockRef.current = INITIAL_STOCK;
+        stockLastUpdatedAtRef.current = now;
+        sessionStorage.setItem(
+          STOCK_SESSION_KEY,
+          JSON.stringify({
+            stock: INITIAL_STOCK,
+            updatedAt: now,
+          }),
+        );
+      }
+
+      setStock(stockRef.current);
+    };
+
     const stockInterval = setInterval(() => {
-      setStock((prev) => (prev <= 12 ? 23 : prev - 1));
-    }, 10000);
+      if (typeof window === "undefined") return;
+
+      const now = Date.now();
+      const lastUpdatedAt = stockLastUpdatedAtRef.current ?? now;
+      const elapsedMs = now - lastUpdatedAt;
+      const decrements = Math.floor(elapsedMs / STOCK_DECREMENT_INTERVAL_MS);
+
+      if (decrements > 0) {
+        const nextStock = Math.max(MIN_STOCK, stockRef.current - decrements);
+        stockRef.current = nextStock;
+        stockLastUpdatedAtRef.current =
+          lastUpdatedAt + decrements * STOCK_DECREMENT_INTERVAL_MS;
+        setStock(nextStock);
+        sessionStorage.setItem(
+          STOCK_SESSION_KEY,
+          JSON.stringify({
+            stock: nextStock,
+            updatedAt: stockLastUpdatedAtRef.current,
+          }),
+        );
+      }
+    }, 1000);
+
+    restoreStock();
+
     return () => {
       clearInterval(countdown);
       clearInterval(viewersInterval);
@@ -204,7 +266,7 @@ export default function OrderModal({
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
   const timerText = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  const stockPercent = Math.round((stock / 23) * 100);
+  const stockPercent = Math.round((stock / INITIAL_STOCK) * 100);
 
   const [items, setItems] = useState<OrderItem[]>(
     Array.from({ length: offers[1].quantity }, () => ({
@@ -295,10 +357,7 @@ export default function OrderModal({
     );
   };
 
-  const getSizeInfo = (tipo: SizeType, talla: string) =>
-    sizeTables[tipo].find((item) => item.talla === talla);
-
-  const onSubmit = (data: OrderFormInput) => {
+  const onSubmit = async (data: OrderFormInput) => {
     const depNombre =
       departamentos.find((d) => d.departamento === data.departamentoId)
         ?.nombre ?? data.departamentoId;
@@ -311,26 +370,40 @@ export default function OrderModal({
         (d) => d.distrito === data.distritoId,
       )?.nombre ?? data.distritoId;
 
-    const detalleProductos = items
-      .map((item, index) => {
-        const sizeInfo = getSizeInfo(item.tipo, item.talla);
-        return `#${index + 1}: ${item.tipo} / Color: ${item.color} / Talla: ${item.talla} / A:${sizeInfo?.a ?? "-"} B:${sizeInfo?.b ?? "-"}`;
-      })
-      .join(" | ");
-
-    const messageData = {
-      ...data,
+    const payload = {
+      nombre: data.nombre,
+      celular: data.celular,
       departamento: depNombre,
       provincia: provNombre,
       distrito: distNombre,
+      direccion: data.direccion,
+      referencia: data.referencia,
       cantidad: selectedOffer.quantity,
-      color: items.map((item, i) => `#${i + 1}: ${item.color}`).join(", "),
-      talla: detalleProductos,
-    } as OrderFormData;
+      color: items.map((item) => item.color).join(", "),
+      talla: items.map((item) => item.talla).join(", "),
+      producto: product.name,
+    };
 
-    const url = buildWhatsAppUrl(product.whatsapp, product.name, messageData);
-    window.open(url, "_blank");
-    onClose();
+    try {
+      const response = await fetch(
+        "https://wawasusr-production.up.railway.app/api/enviar-formulario",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}`);
+      }
+
+      onClose();
+    } catch (error) {
+      console.error("Error al enviar el formulario:", error);
+    }
   };
 
   if (!isOpen) return null;
@@ -823,7 +896,7 @@ export default function OrderModal({
                 textShadow: "0 1px 2px rgba(0,0,0,0.3)",
               }}
             >
-              <span className="text-lg">🛒 ¡LO QUIERO! + PAGO EN CASA</span>
+              <span className="text-lg">🛒 QUIERO REALIZAR MI PEDIDO</span>
               <span className="text-sm font-semibold opacity-90">
                 🚚 Envío a todo el Perú — Total: S/. {total.toFixed(2)}
                 {discountApplied && " ✅ Descuento aplicado"}

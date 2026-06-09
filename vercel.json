@@ -1,4 +1,37 @@
 {
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "wawasrus.com"
+        }
+      ],
+      "destination": "https://www.wawasrus.com/$1",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "destination": "/producto/polera-personalizada-ositos",
+      "permanent": true
+    },
+    {
+      "source": "/products",
+      "destination": "/producto/polera-personalizada-ositos",
+      "permanent": true
+    },
+    {
+      "source": "/productos",
+      "destination": "/producto/polera-personalizada-ositos",
+      "permanent": true
+    },
+    {
+      "source": "/ositos-landing",
+      "destination": "/producto/polera-personalizada-ositos",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

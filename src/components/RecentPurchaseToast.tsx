@@ -87,7 +87,7 @@ export default function RecentPurchaseToast() {
   const [counter, setCounter] = useState(0);
 
   useEffect(() => {
-    // First toast after 4s, then every 12-18s
+    // First toast after 45s to 1.5min, then every 45s to 1.5min
     const showToast = () => {
       const newToast = buildToast(Date.now());
       setToast(newToast);
@@ -99,10 +99,13 @@ export default function RecentPurchaseToast() {
       }, 6000);
     };
 
-    const initialTimer = setTimeout(() => {
-      showToast();
-      setCounter((c) => c + 1);
-    }, 4000);
+    const initialTimer = setTimeout(
+      () => {
+        showToast();
+        setCounter((c) => c + 1);
+      },
+      Math.floor(Math.random() * 45000) + 45000,
+    );
 
     return () => clearTimeout(initialTimer);
   }, []);
@@ -110,7 +113,7 @@ export default function RecentPurchaseToast() {
   useEffect(() => {
     if (counter === 0) return;
 
-    const delay = Math.floor(Math.random() * 6000) + 12000; // 12–18s
+    const delay = Math.floor(Math.random() * 45000) + 45000; // 45s–1.5min
     const timer = setTimeout(() => {
       const newToast = buildToast(Date.now());
       setToast(newToast);

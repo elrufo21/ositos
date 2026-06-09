@@ -25,12 +25,40 @@ export default function FlyerFeed({ product, onOrderClick }: FlyerFeedProps) {
           50% { transform: translateY(-3px); }
         }
 
+        @keyframes slide-up-soft {
+          from {
+            opacity: 0;
+            transform: translateY(16px) scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes shake-btn {
+          0%, 100% { transform: translateX(0) rotate(0deg); }
+          10% { transform: translateX(-5px) rotate(-1deg); }
+          20% { transform: translateX(5px) rotate(1deg); }
+          30% { transform: translateX(-4px) rotate(-0.5deg); }
+          40% { transform: translateX(4px) rotate(0.5deg); }
+          50% { transform: translateX(-3px); }
+          60% { transform: translateX(3px); }
+          70% { transform: translateX(-2px); }
+          80% { transform: translateX(2px); }
+          90% { transform: translateX(-1px); }
+        }
+
         .animate-pulse-green-soft {
           animation: pulse-green-soft 2s ease-in-out infinite;
         }
 
         .animate-float-cart {
           animation: float-cart 1.8s ease-in-out infinite;
+        }
+
+        .animate-slide-up-soft {
+          animation: slide-up-soft 0.45s ease-out both;
         }
       `}</style>
 
@@ -48,6 +76,18 @@ export default function FlyerFeed({ product, onOrderClick }: FlyerFeedProps) {
               decoding="async"
             />
           </div>
+
+          {(index === 0 || index === 3) && (
+            <div className="my-2 px-1 animate-slide-up-soft">
+              <button
+                type="button"
+                onClick={onOrderClick}
+                className="w-full py-3.5 rounded-2xl border-2 border-white/80 bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 text-white font-black text-sm sm:text-base shadow-[0_0_0_2px_rgba(255,255,255,0.45),0_10px_25px_rgba(244,63,94,0.35)] active:scale-[0.98] transition-transform duration-200 hover:scale-[1.01] animate-[shake-btn_1s_ease-in-out_infinite]"
+              >
+                🛒 COMPRAR AHORA
+              </button>
+            </div>
+          )}
         </div>
       ))}
 
