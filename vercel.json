@@ -1,6 +1,17 @@
 {
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "wawasrus.com"
+        }
+      ],
+      "destination": "https://www.wawasrus.com/producto/polera-personalizada-ositos",
+      "permanent": true
+    },
+    {
       "source": "/(.*)",
       "has": [
         {

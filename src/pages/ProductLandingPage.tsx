@@ -24,34 +24,54 @@ export default function ProductLandingPage() {
   const canonicalUrl = `${siteUrl}/producto/${product.slug}`;
   const productImageUrl = new URL(product.cover, siteUrl).toString();
   const seoTitle =
-    "Regalo para Dia del Padre: polera personalizada para papa e hijo | WAWAS R US";
+    "WAWAS R US | Regalo para Dia del Padre y ropa para bebe personalizada";
   const seoDescription =
-    "Polera personalizada OSITOS WAWAS R US para papa, bebe y familia. Regalo para Dia del Padre, ropa para bebe y tallas desde 0-3M hasta adulto XL.";
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    brand: {
-      "@type": "Brand",
-      name: product.brand,
-    },
-    description: seoDescription,
-    image: product.flyers.map((image) => new URL(image, siteUrl).toString()),
-    url: canonicalUrl,
-    category: "Ropa personalizada para bebe y familia",
-    audience: {
-      "@type": "PeopleAudience",
-      suggestedGender: "unisex",
-    },
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "PEN",
-      price: product.price,
-      availability: "https://schema.org/InStock",
+    "WAWAS R US, WAWAS, WAWARUS y WAWASRUS: polera personalizada OSITOS para papa, bebe y familia. Regalo para Dia del Padre y ropa para bebes.";
+  const seoKeywords =
+    "wawas, wawas r us, wawarus, wawasrus, wawas ropa para bebes, ropa para bebes, ropa de bebe, ropa para bebe personalizada, regalo para dia del padre, regalos para el dia del padre, polera personalizada, polera papa e hijo";
+  const structuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.name,
+      brand: {
+        "@type": "Brand",
+        name: product.brand,
+        alternateName: ["WAWAS", "WAWARUS", "WAWASRUS"],
+      },
+      description: seoDescription,
+      image: product.flyers.map((image) => new URL(image, siteUrl).toString()),
       url: canonicalUrl,
-      itemCondition: "https://schema.org/NewCondition",
+      category: "Ropa personalizada para bebe y familia",
+      audience: {
+        "@type": "PeopleAudience",
+        suggestedGender: "unisex",
+      },
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "PEN",
+        price: product.price,
+        availability: "https://schema.org/InStock",
+        url: canonicalUrl,
+        itemCondition: "https://schema.org/NewCondition",
+      },
     },
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: product.brand,
+      alternateName: ["WAWAS", "WAWARUS", "WAWASRUS"],
+      url: siteUrl,
+      logo: `${siteUrl}/favicon.svg`,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: product.brand,
+      alternateName: ["WAWAS", "WAWARUS", "WAWASRUS"],
+      url: canonicalUrl,
+    },
+  ];
 
   return (
     <>
@@ -63,8 +83,10 @@ export default function ProductLandingPage() {
         <meta name="robots" content="index, follow" />
         <meta
           name="keywords"
-          content="regalo para dia del padre, regalos para el dia del padre, ropa para bebe, polera personalizada, polera papa e hijo, WAWAS R US"
+          content={seoKeywords}
         />
+        <meta name="author" content={product.brand} />
+        <meta name="application-name" content={product.brand} />
         <meta property="og:locale" content="es_PE" />
         <meta
           property="og:title"
