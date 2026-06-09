@@ -17,11 +17,11 @@ export default function ProductLandingPage() {
   const canonicalUrl = `${siteUrl}/`;
   const productImageUrl = new URL(product.cover, siteUrl).toString();
   const seoTitle =
-    "WAWAS R US | Regalo para Dia del Padre y ropa para bebe personalizada";
+    "WAWAS R US | Ropa Personalizada para Bebés de Buen Material";
   const seoDescription =
-    "WAWAS R US, WAWAS, WAWARUS y WAWASRUS: polera personalizada OSITOS para papa, bebe y familia. Regalo para Dia del Padre y ropa para bebes.";
+    "Ropa personalizada para bebés, papá y familia en WAWAS R US. Poleras OSITOS de buen material, suaves, cómodas y personalizadas con nombre para regalar en el Día del Padre.";
   const seoKeywords =
-    "wawas, wawas r us, wawarus, wawasrus, wawas ropa para bebes, ropa para bebes, ropa de bebe, ropa para bebe personalizada, regalo para dia del padre, regalos para el dia del padre, polera personalizada, polera papa e hijo";
+    "wawas, wawas r us, wawarus, wawasrus, wawas ropa para bebes, ropa personalizada para bebes, ropa para bebes de buen material, ropa de bebe, poleras personalizadas para bebes, regalo para dia del padre, regalos para el dia del padre, polera personalizada, polera papa e hijo";
   const structuredData = [
     {
       "@context": "https://schema.org",
@@ -35,7 +35,7 @@ export default function ProductLandingPage() {
       description: seoDescription,
       image: product.flyers.map((image) => new URL(image, siteUrl).toString()),
       url: canonicalUrl,
-      category: "Ropa personalizada para bebe y familia",
+      category: "Ropa personalizada para bebés y familia",
       audience: {
         "@type": "PeopleAudience",
         suggestedGender: "unisex",
@@ -55,7 +55,7 @@ export default function ProductLandingPage() {
       name: product.brand,
       alternateName: ["WAWAS", "WAWARUS", "WAWASRUS"],
       url: siteUrl,
-      logo: `${siteUrl}/favicon.svg`,
+      logo: `${siteUrl}/favicon-96x96.png`,
     },
     {
       "@context": "https://schema.org",
@@ -83,6 +83,10 @@ export default function ProductLandingPage() {
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:site_name" content={product.brand} />
         <meta property="og:image" content={productImageUrl} />
+        <meta
+          property="og:image:alt"
+          content="Polera personalizada OSITOS WAWAS R US para bebé, papá y familia"
+        />
         <meta property="og:type" content="product" />
         <meta property="product:price:amount" content={`${product.price}`} />
         <meta property="product:price:currency" content="PEN" />
@@ -90,6 +94,10 @@ export default function ProductLandingPage() {
         <meta name="twitter:title" content={seoTitle} />
         <meta name="twitter:description" content={seoDescription} />
         <meta name="twitter:image" content={productImageUrl} />
+        <meta
+          name="twitter:image:alt"
+          content="Polera personalizada OSITOS WAWAS R US para bebé, papá y familia"
+        />
         <script type="application/ld+json">
           {JSON.stringify(structuredData)}
         </script>

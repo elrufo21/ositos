@@ -281,6 +281,7 @@ export default function OrderModal({
     handleSubmit,
     control,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<OrderFormInput>({
     resolver: zodResolver(orderSchema),
@@ -396,10 +397,33 @@ export default function OrderModal({
         },
       );
 
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}`);
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || result?.ok !== true) {
+        throw new Error(result?.message ?? `Error ${response.status}`);
       }
 
+      reset({
+        nombre: "",
+        celular: "",
+        departamentoId: "",
+        provinciaId: "",
+        distritoId: "",
+        direccion: "",
+        referencia: "",
+      });
+      setSelectedOffer(offers[1]);
+      setSelectedShipping("casa");
+      setItems(
+        Array.from({ length: offers[1].quantity }, () => ({
+          tipo: "Mujer",
+          color: colors[0],
+          talla: sizeTables.Mujer[0].talla,
+        })),
+      );
+      setDiscountApplied(false);
+      setShowExitPopup(false);
+      popupDismissed.current = false;
       onClose();
     } catch (error) {
       console.error("Error al enviar el formulario:", error);
