@@ -74,17 +74,11 @@ export default function ProductLandingPage() {
         <link rel="canonical" href={canonicalUrl} />
         <meta name="description" content={seoDescription} />
         <meta name="robots" content="index, follow" />
-        <meta
-          name="keywords"
-          content={seoKeywords}
-        />
+        <meta name="keywords" content={seoKeywords} />
         <meta name="author" content={product.brand} />
         <meta name="application-name" content={product.brand} />
         <meta property="og:locale" content="es_PE" />
-        <meta
-          property="og:title"
-          content={seoTitle}
-        />
+        <meta property="og:title" content={seoTitle} />
         <meta property="og:description" content={seoDescription} />
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:site_name" content={product.brand} />

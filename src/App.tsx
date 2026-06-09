@@ -1,6 +1,6 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async';
-import ProductLandingPage from './pages/ProductLandingPage';
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
+import ProductLandingPage from "./pages/ProductLandingPage";
 
 function App() {
   return (
