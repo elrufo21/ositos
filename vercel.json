@@ -8,7 +8,7 @@
           "value": "wawasrus.com"
         }
       ],
-      "destination": "https://www.wawasrus.com/producto/polera-personalizada-ositos",
+      "destination": "https://www.wawasrus.com/",
       "permanent": true
     },
     {
@@ -23,23 +23,28 @@
       "permanent": true
     },
     {
-      "source": "/",
-      "destination": "/producto/polera-personalizada-ositos",
+      "source": "/producto/polera-personalizada-ositos",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/polera-personalizada-ositos",
+      "destination": "/",
       "permanent": true
     },
     {
       "source": "/products",
-      "destination": "/producto/polera-personalizada-ositos",
+      "destination": "/",
       "permanent": true
     },
     {
       "source": "/productos",
-      "destination": "/producto/polera-personalizada-ositos",
+      "destination": "/",
       "permanent": true
     },
     {
       "source": "/ositos-landing",
-      "destination": "/producto/polera-personalizada-ositos",
+      "destination": "/",
       "permanent": true
     }
   ],

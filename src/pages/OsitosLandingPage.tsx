@@ -69,7 +69,7 @@ export default function OsitosLandingPage() {
   return (
     <>
       <Helmet>
-        <title>WAWAS R US Landing | Vista de prueba</title>
+        <title>WAWAS R US Landing </title>
         <meta
           name="description"
           content="Vista responsive de prueba para poleras WAWAS R US personalizadas."

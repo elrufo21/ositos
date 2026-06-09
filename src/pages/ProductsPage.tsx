@@ -7,7 +7,7 @@ export default function ProductsPage() {
   return (
     <>
       <Helmet>
-        <title>WAWAS R US | Poleras Personalizadas para Toda la Familia</title>
+        <title>WAWAS R US | Ropa para bebes</title>
         <meta
           name="description"
           content="Poleras personalizadas WAWAS R US con el nombre de tus hijos. Hechas con algodón premium, perfectas para compartir en familia. ¡Precios únicos por temporada!"

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useParams, Navigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { products } from "../data/products";
 import PromoBar from "../components/PromoBar";
@@ -10,18 +9,12 @@ import Footer from "../components/Footer";
 import RecentPurchaseToast from "../components/RecentPurchaseToast";
 
 const siteUrl = "https://www.wawasrus.com";
-const defaultProductPath = "/producto/polera-personalizada-ositos";
 
 export default function ProductLandingPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const product = products.find((p) => p.slug === slug);
+  const product = products[0];
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  if (!product) {
-    return <Navigate to={defaultProductPath} replace />;
-  }
-
-  const canonicalUrl = `${siteUrl}/producto/${product.slug}`;
+  const canonicalUrl = `${siteUrl}/`;
   const productImageUrl = new URL(product.cover, siteUrl).toString();
   const seoTitle =
     "WAWAS R US | Regalo para Dia del Padre y ropa para bebe personalizada";
