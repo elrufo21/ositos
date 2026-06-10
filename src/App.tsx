@@ -1,8 +1,13 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import ProductLandingPage from "./pages/ProductLandingPage";
+import { useEffect } from "react";
+import { initMetaPixel } from "./lib/metaPixel";
 
 function App() {
+  useEffect(() => {
+    initMetaPixel();
+  }, []);
   return (
     <HelmetProvider>
       <BrowserRouter>

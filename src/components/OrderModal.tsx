@@ -81,6 +81,7 @@ const sizeTables = {
 };
 
 import { reniec as ubigeoData } from "ubigeo-peru";
+import { trackLead } from "../lib/metaPixel";
 
 type UbigeoEntry = {
   departamento: string;
@@ -402,6 +403,7 @@ export default function OrderModal({
       if (!response.ok || result?.ok !== true) {
         throw new Error(result?.message ?? `Error ${response.status}`);
       }
+      trackLead();
 
       reset({
         nombre: "",
